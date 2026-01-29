@@ -1,23 +1,31 @@
 name: Monitor BNMP
 
 on:
-  schedule:
-    - cron: "0 12 * * *"
   workflow_dispatch:
+  schedule:
+    - cron: '0 11 * * *'
 
 jobs:
-  run:
+  monitor:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
+
       - name: Instalar dependências
-        run: pip install requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
       - name: Rodar script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python monitor_bnmp.py
+        run: |
+          python monitor_bnmp.py
