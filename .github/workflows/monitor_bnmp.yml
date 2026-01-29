@@ -3,7 +3,8 @@ name: Monitor BNMP
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 11 * * *'
+  - cron: '*/5 * * * *'
+
 
 jobs:
   monitor:
