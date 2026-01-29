@@ -56,14 +56,12 @@ def consultar():
         return
 
     dados = resposta.get("content", [])
-    vistos = carregar()
-    novos = []
+   # MODO TESTE: força envio do mandado mais recente
+novos = []
 
-    for item in dados:
-        identificador = item.get("id")
-        if identificador and identificador not in vistos:
-            novos.append(item)
-            vistos.append(identificador)
+if dados:
+    novos.append(dados[0])
+
 
     if novos:
         for n in novos:
