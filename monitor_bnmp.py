@@ -65,12 +65,12 @@ def consultar():
         return
 
     if r.status_code == 403:
-    print("BNMP bloqueou (403). Tentará novamente no próximo ciclo.")
-    return
-
-if r.status_code != 200:
-    print("BNMP respondeu status:", r.status_code)
-    return
+        print("BNMP bloqueou (403). Tentará novamente no próximo ciclo.")
+        return
+    
+    if r.status_code != 200:
+        print("BNMP respondeu status:", r.status_code)
+        return
 
 
     try:
