@@ -89,3 +89,13 @@ def consultar():
 
 
 consultar()
+print("🔔 TESTE: enviando última ocorrência")
+
+if dados:
+    ultimo = dados[0]
+    enviar_telegram(
+        f"🧪 TESTE MANUAL\n\n"
+        f"👤 Nome: {ultimo.get('nome', 'N/A')}\n"
+        f"📄 Número: {ultimo.get('numero', 'N/A')}"
+    )
+
