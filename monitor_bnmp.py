@@ -48,8 +48,15 @@ def consultar():
     }
 
     headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+    "Referer": "https://portalbnmp.cnj.jus.br/",
+    "Origin": "https://portalbnmp.cnj.jus.br"
+}
+
 
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=30)
@@ -57,9 +64,14 @@ def consultar():
         print("Erro ao conectar no BNMP:", e)
         return
 
-    if r.status_code != 200:
-        print("BNMP respondeu status:", r.status_code)
-        return
+    if r.status_code == 403:
+    print("BNMP bloqueou (403). Tentará novamente no próximo ciclo.")
+    return
+
+if r.status_code != 200:
+    print("BNMP respondeu status:", r.status_code)
+    return
+
 
     try:
         resposta = r.json()
