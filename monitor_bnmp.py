@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime
 
+# ===== CONFIGURAÇÕES =====
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
@@ -12,23 +13,29 @@ UF = "GO"
 ARQUIVO = "vistos.json"
 
 
+# ===== TELEGRAM =====
 def enviar(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": CHAT_ID, "text": msg})
+    requests.post(url, json={
+        "chat_id": CHAT_ID,
+        "text": msg
+    })
 
 
-def carregar():
+# ===== CONTROLE DE VISTOS =====
+def carregar_vistos():
     if os.path.exists(ARQUIVO):
-        with open(ARQUIVO, "r", encoding="utf-8") as f:
+        with open(ARQUIVO, "r") as f:
             return json.load(f)
     return []
 
 
-def salvar(dados):
-    with open(ARQUIVO, "w", encoding="utf-8") as f:
-        json.dump(dados, f, ensure_ascii=False, indent=2)
+def salvar_vistos(dados):
+    with open(ARQUIVO, "w") as f:
+        json.dump(dados, f)
 
 
+# ===== CONSULTA BNMP =====
 def consultar():
     url = "https://portalbnmp.cnj.jus.br/api/pecas/pesquisar"
 
@@ -39,8 +46,12 @@ def consultar():
         "tamanhoPagina": 50
     }
 
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
     try:
-        r = requests.post(url, json=payload, timeout=30)
+        r = requests.post(url, json=payload, headers=headers, timeout=30)
     except Exception as e:
         print("Erro ao conectar no BNMP:", e)
         return
@@ -52,11 +63,15 @@ def consultar():
     try:
         resposta = r.json()
     except Exception:
-        print("Resposta do BNMP não é JSON válido. Ignorando execução.")
+        print("Resposta do BNMP não é JSON válido.")
         return
 
     dados = resposta.get("content", [])
-    vistos = carregar()
+    if not dados:
+        print("Nenhum dado retornado pelo BNMP.")
+        return
+
+    vistos = carregar_vistos()
     novos = []
 
     for item in dados:
@@ -65,37 +80,36 @@ def consultar():
             novos.append(item)
             vistos.append(identificador)
 
-    if novos:
-        for n in novos:
-            nome = (
-                n.get("nomeParte")
-                or n.get("nomePessoa")
-                or n.get("nomeIndiciado")
-                or "não informado pelo BNMP"
-            )
+    if not novos:
+        print("Nenhum novo mandado.")
+        return
 
-            msg = (
-                f"🚨 Novo mandado BNMP\n"
-                f"👤 Nome: {nome}\n"
-                f"📍 Município: {MUNICIPIO}/{UF}\n"
-                f"📄 Classe: {n.get('classeProcessual', 'N/A')}\n"
-                f"🔢 Processo: {n.get('numeroProcesso', 'N/A')}\n"
-                f"🕒 Detectado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-            )
+    for n in novos:
+        nome = (
+            n.get("nomeParte")
+            or n.get("nomePessoa")
+            or n.get("nomeIndiciado")
+            or "não informado pelo BNMP"
+        )
 
-            enviar(msg)
+        msg = (
+            f"🚨 Novo mandado BNMP\n"
+            f"👤 Nome: {nome}\n"
+            f"📍 Município: {MUNICIPIO}/{UF}\n"
+            f"📄 Classe: {n.get('classeProcessual', 'N/A')}\n"
+            f"🔢 Processo: {n.get('numeroProcesso', 'N/A')}\n"
+            f"🕒 Detectado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        )
 
-    salvar(vistos)
+        enviar(msg)
+
+    salvar_vistos(vistos)
 
 
-consultar()
-print("🔔 TESTE: enviando última ocorrência")
+# ===== EXECUÇÃO =====
+if __name__ == "__main__":
+    # 🔔 TESTE SIMPLES (sempre envia)
+    enviar("🧪 TESTE: bot do BNMP está ativo")
 
-if dados:
-    ultimo = dados[0]
-    enviar_telegram(
-        f"🧪 TESTE MANUAL\n\n"
-        f"👤 Nome: {ultimo.get('nome', 'N/A')}\n"
-        f"📄 Número: {ultimo.get('numero', 'N/A')}"
-    )
-
+    # Consulta real
+    consultar()
