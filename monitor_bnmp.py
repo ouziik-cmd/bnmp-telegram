@@ -26,33 +26,49 @@ def salvar(dados):
 
 def consultar():
     url = "https://portalbnmp.cnj.jus.br/api/pecas/pesquisar"
+
     payload = {
         "municipio": MUNICIPIO,
-        "uf": UF
+        "uf": UF,
+        "pagina": 1,
+        "tamanhoPagina": 50
     }
 
-    r = requests.post(url, json=payload, timeout=30)
- try:
-    dados = r.json().get("content", [])
-except Exception:
-    print("Resposta do BNMP não é JSON válido. Ignorando execução.")
-    return
+    try:
+        r = requests.post(url, json=payload, timeout=30)
+    except Exception as e:
+        print("Erro ao conectar no BNMP:", e)
+        return
 
+    if r.status_code != 200:
+        print("BNMP respondeu status:", r.status_code)
+        return
 
-    vistos = carregar()
+    try:
+        resposta = r.json()
+    except Exception:
+        print("Resposta do BNMP não é JSON válido. Ignorando execução.")
+        return
+
+    dados = resposta.get("content", [])
+    vistos = carregar_vistos()
     novos = []
 
     for item in dados:
-        numero = item.get("numeroMandado")
-        if numero and numero not in vistos:
-            novos.append(numero)
-            vistos.append(numero)
+        identificador = item.get("id")
+        if identificador and identificador not in vistos:
+            novos.append(item)
+            vistos.append(identificador)
 
     if novos:
-        msg = "🚨 NOVOS MANDADOS BNMP:\n\n" + "\n".join(novos)
-        enviar(msg)
+        for n in novos:
+            msg = (
+                f"🚨 Novo mandado BNMP\n"
+                f"Município: {MUNICIPIO}/{UF}\n"
+                f"Classe: {n.get('classeProcessual', 'N/A')}\n"
+                f"Número: {n.get('numeroProcesso', 'N/A')}\n"
+                f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            )
+            enviar_telegram(msg)
 
-    salvar(vistos)
-
-if __name__ == "__main__":
-    consultar()
+    salvar_vistos(vistos)
