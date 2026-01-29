@@ -32,7 +32,12 @@ def consultar():
     }
 
     r = requests.post(url, json=payload, timeout=30)
+ try:
     dados = r.json().get("content", [])
+except Exception:
+    print("Resposta do BNMP não é JSON válido. Ignorando execução.")
+    return
+
 
     vistos = carregar()
     novos = []
