@@ -16,13 +16,14 @@ ARQUIVO = "vistos.json"
 # ===== TELEGRAM =====
 def enviar(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(url, json={
-        "chat_id": CHAT_ID,
-        "text": msg
-    })
+    requests.post(
+        url,
+        json={"chat_id": CHAT_ID, "text": msg},
+        timeout=20
+    )
 
 
-# ===== CONTROLE DE VISTOS =====
+# ===== CONTROLE DE MANDADOS JÁ VISTOS =====
 def carregar_vistos():
     if os.path.exists(ARQUIVO):
         with open(ARQUIVO, "r") as f:
@@ -30,12 +31,12 @@ def carregar_vistos():
     return []
 
 
-def salvar_vistos(dados):
+def salvar_vistos(vistos):
     with open(ARQUIVO, "w") as f:
-        json.dump(dados, f)
+        json.dump(vistos, f)
 
 
-# ===== CONSULTA BNMP =====
+# ===== CONSULTA AO BNMP =====
 def consultar():
     url = "https://portalbnmp.cnj.jus.br/api/pecas/pesquisar"
 
@@ -68,7 +69,7 @@ def consultar():
 
     dados = resposta.get("content", [])
     if not dados:
-        print("Nenhum dado retornado pelo BNMP.")
+        print("Nenhum mandado retornado pelo BNMP.")
         return
 
     vistos = carregar_vistos()
@@ -81,7 +82,7 @@ def consultar():
             vistos.append(identificador)
 
     if not novos:
-        print("Nenhum novo mandado.")
+        print("Nenhum mandado novo.")
         return
 
     for n in novos:
@@ -93,7 +94,7 @@ def consultar():
         )
 
         msg = (
-            f"🚨 Novo mandado BNMP\n"
+            f"🚨 NOVO MANDADO BNMP\n\n"
             f"👤 Nome: {nome}\n"
             f"📍 Município: {MUNICIPIO}/{UF}\n"
             f"📄 Classe: {n.get('classeProcessual', 'N/A')}\n"
@@ -108,8 +109,4 @@ def consultar():
 
 # ===== EXECUÇÃO =====
 if __name__ == "__main__":
-    # 🔔 TESTE SIMPLES (sempre envia)
-    enviar("🧪 TESTE: bot do BNMP está ativo")
-
-    # Consulta real
     consultar()
