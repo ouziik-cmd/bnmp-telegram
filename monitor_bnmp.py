@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from datetime import datetime
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
@@ -10,19 +11,23 @@ UF = "GO"
 
 ARQUIVO = "vistos.json"
 
+
 def enviar(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, json={"chat_id": CHAT_ID, "text": msg})
 
+
 def carregar():
     if os.path.exists(ARQUIVO):
-        with open(ARQUIVO, "r") as f:
+        with open(ARQUIVO, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
+
 def salvar(dados):
-    with open(ARQUIVO, "w") as f:
-        json.dump(dados, f)
+    with open(ARQUIVO, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+
 
 def consultar():
     url = "https://portalbnmp.cnj.jus.br/api/pecas/pesquisar"
@@ -51,7 +56,7 @@ def consultar():
         return
 
     dados = resposta.get("content", [])
-    vistos = carregar_vistos()
+    vistos = carregar()
     novos = []
 
     for item in dados:
@@ -62,13 +67,25 @@ def consultar():
 
     if novos:
         for n in novos:
+            nome = (
+                n.get("nomeParte")
+                or n.get("nomePessoa")
+                or n.get("nomeIndiciado")
+                or "não informado pelo BNMP"
+            )
+
             msg = (
                 f"🚨 Novo mandado BNMP\n"
-                f"Município: {MUNICIPIO}/{UF}\n"
-                f"Classe: {n.get('classeProcessual', 'N/A')}\n"
-                f"Número: {n.get('numeroProcesso', 'N/A')}\n"
-                f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                f"👤 Nome: {nome}\n"
+                f"📍 Município: {MUNICIPIO}/{UF}\n"
+                f"📄 Classe: {n.get('classeProcessual', 'N/A')}\n"
+                f"🔢 Processo: {n.get('numeroProcesso', 'N/A')}\n"
+                f"🕒 Detectado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
             )
-            enviar_telegram(msg)
 
-    salvar_vistos(vistos)
+            enviar(msg)
+
+    salvar(vistos)
+
+
+consultar()
